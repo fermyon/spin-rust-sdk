@@ -10,6 +10,6 @@ crate-type = ["cdylib"]
 # Useful crate to handle errors.
 anyhow = "1"
 # The Spin SDK.
-spin-sdk = { path = "../../sdk/rust" }
+spin-sdk = { path = "../.." }
 
 [workspace]

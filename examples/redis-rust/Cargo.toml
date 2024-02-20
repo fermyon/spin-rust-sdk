@@ -12,5 +12,5 @@ anyhow = "1"
 # Crate to simplify working with bytes.
 bytes = "1"
 # The Spin SDK.
-spin-sdk = { path = "../../sdk/rust" }
+spin-sdk = { path = "../.." }
 [workspace]
