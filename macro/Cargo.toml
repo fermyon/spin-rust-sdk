@@ -1,12 +1,13 @@
 [package]
 name = "spin-macro"
-version = { workspace = true }
-edition = { workspace = true }
-authors = { workspace = true }
-license = { workspace = true }
-homepage = { workspace = true }
-repository = { workspace = true }
+version = "2.3.0-pre0"
+authors = ["Fermyon Engineering <engineering@fermyon.com>"]
+edition = "2021"
+license = "Apache-2.0 WITH LLVM-exception"
+homepage = "https://developer.fermyon.com/spin/v2/rust-components"
+repository = "https://github.com/fermyon/spin-rust-sdk"
 documentation = "https://docs.rs/spin-macro"
+rust-version = "1.73"
 readme = "README.md"
 
 description = """
