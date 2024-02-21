@@ -11,4 +11,3 @@ anyhow = "1"
 http = "0.2"
 spin-sdk = { path = "../.." }
 
-[workspace]

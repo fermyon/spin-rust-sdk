@@ -1,0 +1,18 @@
+[workspace]
+members = [
+  "http-rust",
+  "http-rust-outbound-http/http-hello",
+  "http-rust-outbound-http/outbound-http",
+  "http-rust-outbound-http/outbound-http-to-same-app",
+  "http-rust-router",
+  "http-rust-router-macro",
+  "json-http-rust",
+  "redis-rust",
+  "rust-key-value",
+  "rust-outbound-mysql",
+  "rust-outbound-pg",
+  "rust-outbound-redis",    
+  "variables-rust",
+  "wasi-http-rust-streaming-outgoing-body",
+  "wasi-http-streaming-file",
+]

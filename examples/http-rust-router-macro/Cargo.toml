@@ -12,4 +12,3 @@ anyhow = "1"
 # The Spin SDK.
 spin-sdk = { path = "../.." }
 
-[workspace]

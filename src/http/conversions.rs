@@ -2,23 +2,28 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::wit::wasi::io0_2_0_rc_2023_10_18::streams;
+use crate::wit::wasi::io::streams;
 
 use super::{
-    Headers, IncomingRequest, IncomingResponse, Json, JsonBodyError, OutgoingRequest,
+    Headers, IncomingRequest, IncomingResponse, Json, JsonBodyError, Method, OutgoingRequest,
     OutgoingResponse, RequestBuilder,
 };
 
 use super::{responses, NonUtf8BodyError, Request, Response};
 
-impl From<Response> for OutgoingResponse {
-    fn from(response: Response) -> Self {
+impl TryFrom<Response> for OutgoingResponse {
+    type Error = anyhow::Error;
+
+    fn try_from(response: Response) -> anyhow::Result<Self> {
         let headers = response
             .headers
             .into_iter()
             .map(|(k, v)| (k, v.into_bytes()))
             .collect::<Vec<_>>();
-        OutgoingResponse::new(response.status, &Headers::new(&headers))
+        let res = OutgoingResponse::new(Headers::from_list(&headers)?);
+        res.set_status_code(response.status)
+            .map_err(|()| anyhow::anyhow!("error setting status code to {}", response.status))?;
+        Ok(res)
     }
 }
 
@@ -526,30 +531,36 @@ impl TryIntoOutgoingRequest for OutgoingRequest {
 }
 
 impl TryIntoOutgoingRequest for Request {
-    type Error = std::convert::Infallible;
+    type Error = anyhow::Error;
 
     fn try_into_outgoing_request(self) -> Result<(OutgoingRequest, Option<Vec<u8>>), Self::Error> {
         let headers = self
             .headers()
             .map(|(k, v)| (k.to_owned(), v.as_bytes().to_owned()))
             .collect::<Vec<_>>();
-        let request = OutgoingRequest::new(
-            self.method(),
-            self.path_and_query(),
-            Some(if self.is_https() {
+        let request = OutgoingRequest::new(Headers::from_list(&headers)?);
+        request
+            .set_method(self.method())
+            .map_err(|()| anyhow::anyhow!("error setting method to {}", self.method()))?;
+        request
+            .set_path_with_query(self.path_and_query())
+            .map_err(|()| anyhow::anyhow!("error setting path to {:?}", self.path_and_query()))?;
+        request
+            .set_scheme(Some(if self.is_https() {
                 &super::Scheme::Https
             } else {
                 &super::Scheme::Http
-            }),
-            self.authority(),
-            &Headers::new(&headers),
-        );
+            }))
+            .unwrap();
+        request
+            .set_authority(self.authority())
+            .map_err(|()| anyhow::anyhow!("error setting authority to {:?}", self.authority()))?;
         Ok((request, Some(self.into_body())))
     }
 }
 
 impl TryIntoOutgoingRequest for RequestBuilder {
-    type Error = std::convert::Infallible;
+    type Error = anyhow::Error;
 
     fn try_into_outgoing_request(
         mut self,
@@ -570,20 +581,33 @@ where
             .into_iter()
             .map(|(n, v)| (n.as_str().to_owned(), v.as_bytes().to_owned()))
             .collect::<Vec<_>>();
-        let request = OutgoingRequest::new(
-            &self.method().clone().into(),
-            self.uri().path_and_query().map(|p| p.as_str()),
-            self.uri()
-                .scheme()
-                .map(|s| match s.as_str() {
-                    "http" => super::Scheme::Http,
-                    "https" => super::Scheme::Https,
-                    s => super::Scheme::Other(s.to_owned()),
-                })
-                .as_ref(),
-            self.uri().authority().map(|a| a.as_str()),
-            &Headers::new(&headers),
-        );
+        let request = OutgoingRequest::new(Headers::from_list(&headers)?);
+        request
+            .set_method(&self.method().clone().into())
+            .map_err(|()| {
+                anyhow::anyhow!(
+                    "error setting method to {}",
+                    Method::from(self.method().clone())
+                )
+            })?;
+        request
+            .set_path_with_query(self.uri().path_and_query().map(|p| p.as_str()))
+            .map_err(|()| {
+                anyhow::anyhow!("error setting path to {:?}", self.uri().path_and_query())
+            })?;
+        let scheme = self.uri().scheme().map(|s| match s.as_str() {
+            "http" => super::Scheme::Http,
+            "https" => super::Scheme::Https,
+            s => super::Scheme::Other(s.to_owned()),
+        });
+        request
+            .set_scheme(scheme.as_ref())
+            .map_err(|()| anyhow::anyhow!("error setting scheme to {scheme:?}"))?;
+        request
+            .set_authority(self.uri().authority().map(|a| a.as_str()))
+            .map_err(|()| {
+                anyhow::anyhow!("error setting authority to {:?}", self.uri().authority())
+            })?;
         let buffer = TryIntoBody::try_into_body(self.into_body())?;
         Ok((request, Some(buffer)))
     }
