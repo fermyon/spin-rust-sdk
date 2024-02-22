@@ -13,5 +13,3 @@ hex = "0.4.3"
 sha2 = "0.10.6"
 url = "2.4.0"
 spin-sdk = { path = "../.." }
-
-[workspace]

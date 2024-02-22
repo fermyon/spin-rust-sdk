@@ -8,6 +8,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1"
-spin-sdk = { path = "../../../sdk/rust" }
+spin-sdk = { path = "../../../" }
 
-[workspace]

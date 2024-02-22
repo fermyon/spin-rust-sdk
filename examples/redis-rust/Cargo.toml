@@ -13,4 +13,3 @@ anyhow = "1"
 bytes = "1"
 # The Spin SDK.
 spin-sdk = { path = "../.." }
-[workspace]

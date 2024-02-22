@@ -31,13 +31,13 @@ async fn handle_request(request: IncomingRequest, response_out: ResponseOutparam
                     let mut incoming_response_body = incoming_response.take_body_stream();
 
                     let outgoing_response = OutgoingResponse::new(
-                        200,
-                        &Headers::new(
+                        Headers::from_list(
                             &headers
                                 .into_iter()
                                 .filter(|(k, _)| k == "content-type")
                                 .collect::<Vec<_>>(),
-                        ),
+                        )
+                        .unwrap(),
                     );
 
                     let mut outgoing_response_body = outgoing_response.take_body();
@@ -72,17 +72,21 @@ async fn double_echo(
     incoming_request: IncomingRequest,
     url: &Url,
 ) -> anyhow::Result<(impl Future<Output = anyhow::Result<()>>, IncomingResponse)> {
-    let outgoing_request = OutgoingRequest::new(
-        &Method::Post,
-        Some(url.path()),
-        Some(&match url.scheme() {
+    let outgoing_request = OutgoingRequest::new(Headers::new());
+    outgoing_request.set_method(&Method::Post).unwrap();
+    outgoing_request
+        .set_path_with_query(Some(url.path()))
+        .map_err(|()| anyhow::anyhow!("unable to set path"))?;
+    outgoing_request
+        .set_scheme(Some(&match url.scheme() {
             "http" => Scheme::Http,
             "https" => Scheme::Https,
             scheme => Scheme::Other(scheme.into()),
-        }),
-        Some(url.authority()),
-        &Headers::new(&[]),
-    );
+        }))
+        .map_err(|()| anyhow::anyhow!("unable to set scheme"))?;
+    outgoing_request
+        .set_authority(Some(url.authority()))
+        .map_err(|()| anyhow::anyhow!("unable to set authority"))?;
 
     let mut body = outgoing_request.take_body();
 
@@ -113,11 +117,12 @@ fn method_not_allowed(response_out: ResponseOutparam) {
 }
 
 fn respond(status: u16, response_out: ResponseOutparam) {
-    let response = OutgoingResponse::new(status, &Headers::new(&[]));
+    let response = OutgoingResponse::new(Headers::new());
+    response.set_status_code(status).unwrap();
 
-    let body = response.write().expect("response should be writable");
+    let body = response.body().expect("response should be writable");
 
     response_out.set(response);
 
-    OutgoingBody::finish(body, None);
+    OutgoingBody::finish(body, None).expect("OutgoingBody::finish should succeed");
 }

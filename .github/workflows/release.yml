@@ -1,0 +1,37 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+      - "v[0-9]+.[0-9]+"
+    tags:
+      - "v*"
+
+env:
+  RUST_VERSION: 1.73
+
+jobs:
+  crates:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    if: |
+      startsWith(github.ref, 'refs/tags/v') &&
+      github.repository_owner == 'fermyon'
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install ${{ env.RUST_VERSION }}
+          rustup default ${{ env.RUST_VERSION }}
+
+      - name: Publish spin-macro to crates.io
+        working-directory: ./macro
+        run: |
+          cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Publish spin-sdk to crates.io
+        working-directory: ./
+        run: |
+          cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}

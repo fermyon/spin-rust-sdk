@@ -15,13 +15,10 @@ async fn handler(req: IncomingRequest, res: ResponseOutparam) {
 }
 
 async fn stream_file(_req: IncomingRequest, res: ResponseOutparam) -> Result<()> {
-    let response = OutgoingResponse::new(
-        200,
-        &Headers::new(&[(
-            "content-type".to_string(),
-            b"application/octet-stream".to_vec(),
-        )]),
-    );
+    let response = OutgoingResponse::new(Headers::from_list(&[(
+        "content-type".to_string(),
+        b"application/octet-stream".to_vec(),
+    )])?);
 
     let mut body = response.take_body();
     res.set(response);

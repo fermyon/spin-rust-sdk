@@ -1,9 +1,9 @@
-use crate::wit::wasi::http0_2_0_rc_2023_10_18::outgoing_handler;
-use crate::wit::wasi::http0_2_0_rc_2023_10_18::types::{
-    self, IncomingBody, IncomingResponse, OutgoingBody, OutgoingRequest,
+use crate::wit::wasi::http::outgoing_handler;
+use crate::wit::wasi::http::types::{
+    ErrorCode, IncomingBody, IncomingResponse, OutgoingBody, OutgoingRequest,
 };
-use crate::wit::wasi::io0_2_0_rc_2023_10_18 as io;
-use crate::wit::wasi::io0_2_0_rc_2023_10_18::streams::{InputStream, OutputStream, StreamError};
+use crate::wit::wasi::io;
+use crate::wit::wasi::io::streams::{InputStream, OutputStream, StreamError};
 
 use futures::{future, sink, stream, Sink, Stream};
 
@@ -47,7 +47,7 @@ pub fn run<T>(future: impl Future<Output = T>) -> T {
 
                 let mut ready = vec![false; wakers.len()];
 
-                for index in io::poll::poll_list(&pollables) {
+                for index in io::poll::poll(&pollables) {
                     ready[usize::try_from(index).unwrap()] = true;
                 }
 
@@ -66,14 +66,14 @@ pub fn run<T>(future: impl Future<Output = T>) -> T {
     }
 }
 
-pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = types::Error> {
+pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = StreamError> {
     struct Outgoing(Option<(OutputStream, OutgoingBody)>);
 
     impl Drop for Outgoing {
         fn drop(&mut self) {
             if let Some((stream, body)) = self.0.take() {
                 drop(stream);
-                OutgoingBody::finish(body, None);
+                _ = OutgoingBody::finish(body, None);
             }
         }
     }
@@ -109,13 +109,7 @@ pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = ty
                                         match stream.flush() {
                                             Ok(()) => flushing = true,
                                             Err(StreamError::Closed) => break Poll::Ready(Ok(())),
-                                            Err(StreamError::LastOperationFailed(e)) => {
-                                                break Poll::Ready(Err(
-                                                    types::Error::ProtocolError(format!(
-                                                        "I/O error: {e}"
-                                                    )),
-                                                ))
-                                            }
+                                            Err(e) => break Poll::Ready(Err(e)),
                                         }
                                     }
                                 } else {
@@ -126,11 +120,7 @@ pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = ty
                                         Ok(()) => {
                                             offset += count;
                                         }
-                                        Err(e) => {
-                                            break Poll::Ready(Err(types::Error::ProtocolError(
-                                                format!("I/O error: {e}"),
-                                            )))
-                                        }
+                                        Err(e) => break Poll::Ready(Err(e)),
                                     }
                                 }
                             }
@@ -140,11 +130,7 @@ pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = ty
                             Err(StreamError::Closed) if offset == chunk.len() => {
                                 break Poll::Ready(Ok(()))
                             }
-                            Err(e) => {
-                                break Poll::Ready(Err(types::Error::ProtocolError(format!(
-                                    "I/O error: {e}"
-                                ))))
-                            }
+                            Err(e) => break Poll::Ready(Err(e)),
                         }
                     }
                 }
@@ -156,7 +142,7 @@ pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = ty
 /// Send the specified request and return the response.
 pub(crate) fn outgoing_request_send(
     request: OutgoingRequest,
-) -> impl Future<Output = Result<IncomingResponse, types::Error>> {
+) -> impl Future<Output = Result<IncomingResponse, ErrorCode>> {
     let response = outgoing_handler::handle(request, None);
     future::poll_fn({
         move |context| match &response {

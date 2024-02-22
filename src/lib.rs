@@ -22,7 +22,7 @@ pub mod wit {
     #![allow(missing_docs)]
 
     wit_bindgen::generate!({
-        world: "platform-rc20231018",
+        world: "platform",
         path: "./wit",
     });
     pub use fermyon::spin2_0_0 as v2;

@@ -7,13 +7,13 @@ use std::collections::HashMap;
 pub use conversions::IntoResponse;
 #[doc(inline)]
 pub use types::{
-    Error, Fields, Headers, IncomingRequest, IncomingResponse, Method, OutgoingBody,
+    ErrorCode, Fields, Headers, IncomingRequest, IncomingResponse, Method, OutgoingBody,
     OutgoingRequest, OutgoingResponse, Scheme, StatusCode, Trailers,
 };
 
 use self::conversions::{TryFromIncomingResponse, TryIntoOutgoingRequest};
-use super::wit::wasi::http0_2_0_rc_2023_10_18::types;
-use crate::wit::wasi::io0_2_0_rc_2023_10_18::streams;
+use super::wit::wasi::http::types;
+use crate::wit::wasi::io::streams::{self, StreamError};
 use futures::SinkExt;
 
 /// A unified request object that can represent both incoming and outgoing requests.
@@ -561,8 +561,8 @@ impl OutgoingResponse {
     /// # Panics
     ///
     /// Panics if the body was already taken.
-    pub fn take_body(&self) -> impl futures::Sink<Vec<u8>, Error = Error> {
-        executor::outgoing_body(self.write().expect("response body was already taken"))
+    pub fn take_body(&self) -> impl futures::Sink<Vec<u8>, Error = StreamError> {
+        executor::outgoing_body(self.body().expect("response body was already taken"))
     }
 }
 
@@ -572,8 +572,8 @@ impl OutgoingRequest {
     /// # Panics
     ///
     /// Panics if the body was already taken.
-    pub fn take_body(&self) -> impl futures::Sink<Vec<u8>, Error = Error> {
-        executor::outgoing_body(self.write().expect("request body was already taken"))
+    pub fn take_body(&self) -> impl futures::Sink<Vec<u8>, Error = StreamError> {
+        executor::outgoing_body(self.body().expect("request body was already taken"))
     }
 }
 
@@ -600,7 +600,7 @@ impl ResponseOutparam {
         self,
         response: OutgoingResponse,
         buffer: Vec<u8>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), StreamError> {
         let mut body = response.take_body();
         self.set(response);
         body.send(buffer).await
@@ -627,10 +627,7 @@ where
         // do not call `OutgoingRequest::write`` if they return a buffered body.
         let mut body_sink = request.take_body();
         let response = executor::outgoing_request_send(request);
-        body_sink
-            .send(body_buffer)
-            .await
-            .map_err(|e| SendError::Http(Error::UnexpectedError(e.to_string())))?;
+        body_sink.send(body_buffer).await.map_err(SendError::Io)?;
         drop(body_sink);
         response.await.map_err(SendError::Http)?
     } else {
@@ -653,9 +650,12 @@ pub enum SendError {
     /// Error converting from a response
     #[error(transparent)]
     ResponseConversion(Box<dyn std::error::Error + Send + Sync>),
+    /// An I/O error
+    #[error(transparent)]
+    Io(StreamError),
     /// An HTTP error
     #[error(transparent)]
-    Http(Error),
+    Http(ErrorCode),
 }
 
 #[doc(hidden)]

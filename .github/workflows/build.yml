@@ -1,0 +1,39 @@
+name: Rust
+on:
+  push:
+    branches: ["main", "v*"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main", "v*"]
+    paths-ignore:
+      - "README.md"
+ 
+env:
+  RUST_VERSION: 1.73
+ 
+jobs:
+  lint-rust:
+    name: Lint Rust
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
+          rustup default ${{ env.RUST_VERSION }}
+
+      - name: Lint SDK code
+        shell: bash
+        run: |
+          cargo clippy --all --all-targets --features all-tests -- -D warnings
+          cargo fmt --all -- --check
+        
+      - name: Lint examples        
+        shell: bash
+        run: |
+          cd examples
+          cargo clippy --all --all-targets --features all-tests -- -D warnings
+          cargo fmt --all -- --check
+        
