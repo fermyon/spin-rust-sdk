@@ -551,6 +551,8 @@ impl TryIntoOutgoingRequest for Request {
             } else {
                 &super::Scheme::Http
             }))
+            // According to the documentation, `Request::set_scheme` can only fail due to a malformed
+            // `Scheme::Other` payload, but we never pass `Scheme::Other` above, hence the `unwrap`.
             .unwrap();
         request
             .set_authority(self.authority())
