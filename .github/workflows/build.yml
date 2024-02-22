@@ -27,13 +27,13 @@ jobs:
       - name: Lint SDK code
         shell: bash
         run: |
-          cargo clippy --all --all-targets --features all-tests -- -D warnings
+          cargo clippy --all --all-targets -- -D warnings
           cargo fmt --all -- --check
         
       - name: Lint examples        
         shell: bash
         run: |
           cd examples
-          cargo clippy --all --all-targets --features all-tests -- -D warnings
+          cargo clippy --all --all-targets -- -D warnings
           cargo fmt --all -- --check
         
