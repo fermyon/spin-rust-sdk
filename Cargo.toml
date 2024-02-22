@@ -34,10 +34,5 @@ serde = { version = "1.0.163", optional = true }
 
 [features]
 default = ["export-sdk-language", "json"]
-experimental = []
 export-sdk-language = []
 json = ["dep:serde", "dep:serde_json"]
-# This was a default feature in the 2.0.0 release but couldn't be disabled
-# without breakage. Retained here for backward compat and future reuse.
-# TODO: Consider removing in a future release if it remains unused.
-http = []
