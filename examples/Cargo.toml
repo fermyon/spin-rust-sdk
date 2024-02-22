@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
   "http-rust",
   "http-rust-outbound-http/http-hello",
@@ -16,3 +17,4 @@ members = [
   "wasi-http-rust-streaming-outgoing-body",
   "wasi-http-streaming-file",
 ]
+
