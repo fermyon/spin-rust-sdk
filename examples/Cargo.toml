@@ -9,6 +9,7 @@ members = [
   "http-rust-router-macro",
   "json-http-rust",
   "redis-rust",
+  "redis-rust-async",
   "rust-key-value",
   "rust-outbound-mysql",
   "rust-outbound-pg",

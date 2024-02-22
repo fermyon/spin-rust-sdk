@@ -8,6 +8,7 @@ const WIT_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/wit");
 pub fn redis_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let func = syn::parse_macro_input!(item as syn::ItemFn);
     let func_name = &func.sig.ident;
+    let await_postfix = func.sig.asyncness.map(|_| quote!(.await));
     let preamble = preamble(Export::Redis);
 
     quote!(
@@ -18,13 +19,15 @@ pub fn redis_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
             impl self::preamble::exports::fermyon::spin::inbound_redis::Guest for preamble::Spin {
                 fn handle_message(msg: self::preamble::exports::fermyon::spin::inbound_redis::Payload) -> Result<(), self::preamble::fermyon::spin::redis_types::Error> {
-                    match super::#func_name(msg.try_into().expect("cannot convert from Spin Redis payload")) {
-                        Ok(()) => Ok(()),
-                        Err(e) => {
-                            eprintln!("{}", e);
-                            Err(self::preamble::fermyon::spin::redis_types::Error::Error)
-                        },
-                    }
+                    ::spin_sdk::http::run(async move {
+                        match super::#func_name(msg.try_into().expect("cannot convert from Spin Redis payload"))#await_postfix {
+                            Ok(()) => Ok(()),
+                            Err(e) => {
+                                eprintln!("{}", e);
+                                Err(self::preamble::fermyon::spin::redis_types::Error::Error)
+                            },
+                        }
+                    })
                 }
             }
         }
