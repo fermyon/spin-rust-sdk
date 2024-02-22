@@ -12,7 +12,7 @@ crate-type = ["cdylib"]
 # Useful crate to handle errors.
 anyhow = "1"
 # General-purpose crate with common HTTP types.
-http = "0.2"
+http = "1.0.0"
 serde = "1.0.144"
 serde_json = "1.0.85"
 # The Spin SDK.

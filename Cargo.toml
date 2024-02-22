@@ -28,7 +28,7 @@ routefinder = "0.5.3"
 once_cell = "1.18.0"
 futures = "0.3.28"
 bytes = "1"
-hyperium = { package = "http", version = "0.2" }
+hyperium = { package = "http", version = "1.0.0" }
 serde_json = { version = "1.0.96", optional = true }
 serde = { version = "1.0.163", optional = true }
 
