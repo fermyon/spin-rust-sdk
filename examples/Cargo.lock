@@ -226,6 +226,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hello-world"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "http",
+ "serde",
+ "spin-sdk",
+]
+
+[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -248,16 +258,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "http",
- "spin-sdk",
-]
-
-[[package]]
-name = "http-rust"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "http",
- "serde",
  "spin-sdk",
 ]
 
