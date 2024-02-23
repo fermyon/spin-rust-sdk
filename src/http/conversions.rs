@@ -554,9 +554,13 @@ impl TryIntoOutgoingRequest for Request {
             // According to the documentation, `Request::set_scheme` can only fail due to a malformed
             // `Scheme::Other` payload, but we never pass `Scheme::Other` above, hence the `unwrap`.
             .unwrap();
+        let authority = self
+            .authority()
+            // `wasi-http` requires an authority for outgoing requests, so we always supply one:
+            .or_else(|| Some(if self.is_https() { ":443" } else { ":80" }));
         request
-            .set_authority(self.authority())
-            .map_err(|()| anyhow::anyhow!("error setting authority to {:?}", self.authority()))?;
+            .set_authority(authority)
+            .map_err(|()| anyhow::anyhow!("error setting authority to {authority:?}"))?;
         Ok((request, Some(self.into_body())))
     }
 }
