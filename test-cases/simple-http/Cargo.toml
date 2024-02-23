@@ -1,0 +1,12 @@
+[package]
+name = "simple-http"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1.0.80"
+http = "1.0.0"
+spin-sdk = { path = "../.." }
