@@ -68,30 +68,7 @@ async fn build_component(name: &str) -> Result<Vec<u8>> {
         })
         .await;
 
-    const ADAPTER_PATH: &str = "target/wasi_snapshot_preview1.reactor.wasm";
-
-    static GET_ADAPTER: OnceCell<()> = OnceCell::const_new();
-
-    GET_ADAPTER
-        .get_or_init(|| async {
-            let adapter_url = "https://github.com/bytecodealliance/wasmtime/releases\
-                               /download/v18.0.1/wasi_snapshot_preview1.reactor.wasm";
-
-            if !fs::try_exists(ADAPTER_PATH).await.unwrap() {
-                fs::write(
-                    ADAPTER_PATH,
-                    reqwest::get(adapter_url)
-                        .await
-                        .unwrap()
-                        .bytes()
-                        .await
-                        .unwrap(),
-                )
-                .await
-                .unwrap();
-            }
-        })
-        .await;
+    const ADAPTER_PATH: &str = "adapters/ab5a4484/wasi_snapshot_preview1.reactor.wasm";
 
     ComponentEncoder::default()
         .validate(true)
