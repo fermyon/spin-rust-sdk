@@ -2,6 +2,9 @@
 
 #![deny(missing_docs)]
 
+#[cfg(test)]
+mod test;
+
 /// Key/Value storage.
 pub mod key_value;
 

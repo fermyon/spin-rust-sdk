@@ -36,3 +36,36 @@ serde = { version = "1.0.163", optional = true }
 default = ["export-sdk-language", "json"]
 export-sdk-language = []
 json = ["dep:serde", "dep:serde_json"]
+
+[workspace]
+resolver = "2"
+members = [
+  "examples/hello-world",
+  "examples/http-outbound/http-hello",
+  "examples/http-outbound/outbound-http",
+  "examples/http-outbound/outbound-http-to-same-app",
+  "examples/http-router",
+  "examples/http-router-macro",
+  "examples/json-http",
+  "examples/redis",
+  "examples/redis-async",
+  "examples/key-value",
+  "examples/mysql",
+  "examples/postgres",
+  "examples/redis-outbound",    
+  "examples/variables",
+  "examples/wasi-http-streaming-outgoing-body",
+  "examples/wasi-http-streaming-file",
+  "test-cases/simple-http",
+  "test-cases/simple-redis",
+]
+
+[dev-dependencies]
+http-body-util = "0.1.0"
+hyper = "1.2.0"
+reqwest = "0.11.24"
+tokio = { version = "1.36.0", features = ["fs", "process", "macros", "rt-multi-thread", "sync"] }
+wasmtime = "18.0.1"
+wasmtime-wasi = "18.0.1"
+wasmtime-wasi-http = "18.0.1"
+wit-component = "0.200.0"
