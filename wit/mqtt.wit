@@ -11,8 +11,7 @@ interface mqtt {
         other(string),
     }
   
-    /// QoS for publishing Mqtt messages
-    /// TODO: will enum result in consistent values across languages?
+    /// QoS for publishing Mqtt messages    
      enum qos {
         at-most-once,
         at-least-once,
