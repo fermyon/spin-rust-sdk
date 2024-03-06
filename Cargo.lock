@@ -1525,14 +1525,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-outbound-mqtt"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "spin-sdk",
-]
-
-[[package]]
 name = "rust-outbound-mysql"
 version = "0.1.0"
 dependencies = [
