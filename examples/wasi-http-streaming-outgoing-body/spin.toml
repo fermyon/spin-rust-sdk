@@ -11,7 +11,7 @@ route = "/..."
 component = "wasi-http-async"
 
 [component.wasi-http-async]
-source = "../target/wasm32-wasi/release/wasi_http_rust_streaming_outgoing_body.wasm"
+source = "../../target/wasm32-wasi/release/wasi_http_rust_streaming_outgoing_body.wasm"
 allowed_outbound_hosts = ["http://*:*", "https://*:*"]
 [component.wasi-http-async.build]
 command = "cargo build --target wasm32-wasi --release"
