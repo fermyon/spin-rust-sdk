@@ -11,7 +11,7 @@ route = "/hello"
 component = "hello"
 
 [component.hello]
-source = "../target/wasm32-wasi/release/hello_world.wasm"
+source = "../../target/wasm32-wasi/release/hello_world.wasm"
 description = "A simple component that returns hello."
 [component.hello.build]
 command = "cargo build --target wasm32-wasi --release"
