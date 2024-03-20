@@ -2,69 +2,20 @@ use crate::wit::wasi::http::outgoing_handler;
 use crate::wit::wasi::http::types::{
     ErrorCode, IncomingBody, IncomingResponse, OutgoingBody, OutgoingRequest,
 };
-use crate::wit::wasi::io;
-use crate::wit::wasi::io::streams::{InputStream, OutputStream, StreamError};
+
+use spin_executor::bindings::wasi::io;
+use spin_executor::bindings::wasi::io::streams::{InputStream, OutputStream, StreamError};
 
 use futures::{future, sink, stream, Sink, Stream};
 
+pub use spin_executor::run;
+
 use std::cell::RefCell;
 use std::future::Future;
-use std::mem;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use std::task::{Context, Poll, Wake, Waker};
+use std::task::Poll;
 
 const READ_SIZE: u64 = 16 * 1024;
-
-static WAKERS: Mutex<Vec<(io::poll::Pollable, Waker)>> = Mutex::new(Vec::new());
-
-/// Run the specified future to completion blocking until it yields a result.
-///
-/// Based on an executor using `wasi::io/poll/poll-list`,
-pub fn run<T>(future: impl Future<Output = T>) -> T {
-    futures::pin_mut!(future);
-    struct DummyWaker;
-
-    impl Wake for DummyWaker {
-        fn wake(self: Arc<Self>) {}
-    }
-
-    let waker = Arc::new(DummyWaker).into();
-
-    loop {
-        match future.as_mut().poll(&mut Context::from_waker(&waker)) {
-            Poll::Pending => {
-                let mut new_wakers = Vec::new();
-
-                let wakers = mem::take::<Vec<_>>(&mut WAKERS.lock().unwrap());
-
-                assert!(!wakers.is_empty());
-
-                let pollables = wakers
-                    .iter()
-                    .map(|(pollable, _)| pollable)
-                    .collect::<Vec<_>>();
-
-                let mut ready = vec![false; wakers.len()];
-
-                for index in io::poll::poll(&pollables) {
-                    ready[usize::try_from(index).unwrap()] = true;
-                }
-
-                for (ready, (pollable, waker)) in ready.into_iter().zip(wakers) {
-                    if ready {
-                        waker.wake()
-                    } else {
-                        new_wakers.push((pollable, waker));
-                    }
-                }
-
-                *WAKERS.lock().unwrap() = new_wakers;
-            }
-            Poll::Ready(result) => break result,
-        }
-    }
-}
 
 pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = StreamError> {
     struct Outgoing(Option<(OutputStream, OutgoingBody)>);
@@ -94,11 +45,10 @@ pub(crate) fn outgoing_body(body: OutgoingBody) -> impl Sink<Vec<u8>, Error = St
                     loop {
                         match stream.check_write() {
                             Ok(0) => {
-                                WAKERS
-                                    .lock()
-                                    .unwrap()
-                                    .push((stream.subscribe(), context.waker().clone()));
-
+                                spin_executor::push_waker(
+                                    stream.subscribe(),
+                                    context.waker().clone(),
+                                );
                                 break Poll::Pending;
                             }
                             Ok(count) => {
@@ -150,10 +100,7 @@ pub(crate) fn outgoing_request_send(
                 if let Some(response) = response.get() {
                     Poll::Ready(response.unwrap())
                 } else {
-                    WAKERS
-                        .lock()
-                        .unwrap()
-                        .push((response.subscribe(), context.waker().clone()));
+                    spin_executor::push_waker(response.subscribe(), context.waker().clone());
                     Poll::Pending
                 }
             }
@@ -186,10 +133,7 @@ pub fn incoming_body(
                 match stream.read(READ_SIZE) {
                     Ok(buffer) => {
                         if buffer.is_empty() {
-                            WAKERS
-                                .lock()
-                                .unwrap()
-                                .push((stream.subscribe(), context.waker().clone()));
+                            spin_executor::push_waker(stream.subscribe(), context.waker().clone());
                             Poll::Pending
                         } else {
                             Poll::Ready(Some(Ok(buffer)))

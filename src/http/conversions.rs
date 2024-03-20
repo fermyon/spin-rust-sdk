@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::wit::wasi::io::streams;
+use spin_executor::bindings::wasi::io::streams;
 
 use super::{
     Headers, IncomingRequest, IncomingResponse, Json, JsonBodyError, Method, OutgoingRequest,

@@ -26,8 +26,13 @@ jobs:
           rustup toolchain install ${{ env.RUST_VERSION }}
           rustup default ${{ env.RUST_VERSION }}
 
+      - name: Publish spin-executor to crates.io
+        working-directory: ./crates/executor
+        run: |
+          cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
       - name: Publish spin-macro to crates.io
-        working-directory: ./macro
+        working-directory: ./crates/macro
         run: |
           cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
