@@ -13,8 +13,8 @@ pub use types::{
 
 use self::conversions::{TryFromIncomingResponse, TryIntoOutgoingRequest};
 use super::wit::wasi::http::types;
-use crate::wit::wasi::io::streams::{self, StreamError};
 use futures::SinkExt;
+use spin_executor::bindings::wasi::io::streams::{self, StreamError};
 
 /// A unified request object that can represent both incoming and outgoing requests.
 ///
@@ -742,14 +742,6 @@ pub mod responses {
         Response::new(400, msg.map(|m| m.into_bytes()))
     }
 }
-
-impl std::fmt::Display for streams::Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.to_debug_string())
-    }
-}
-
-impl std::error::Error for streams::Error {}
 
 #[cfg(test)]
 mod tests {
