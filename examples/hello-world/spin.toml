@@ -13,6 +13,8 @@ component = "hello"
 [component.hello]
 source = "../../target/wasm32-wasi/release/hello_world.wasm"
 description = "A simple component that returns hello."
+allowed_outbound_hosts = ["https://*:*"]
+key_value_stores = ["default"]
 [component.hello.build]
 command = "cargo build --target wasm32-wasi --release"
 watch = ["src/**/*.rs", "Cargo.toml"]

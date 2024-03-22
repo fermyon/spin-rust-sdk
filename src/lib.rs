@@ -109,3 +109,6 @@ pub use wit::v2::variables;
 
 #[doc(hidden)]
 pub use wit_bindgen;
+
+#[doc(inline)]
+pub use wit::v2::observe;
