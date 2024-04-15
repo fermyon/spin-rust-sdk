@@ -3,8 +3,8 @@ use crate::wit::wasi::http::types::{
     ErrorCode, IncomingBody, IncomingResponse, OutgoingBody, OutgoingRequest,
 };
 
-use spin_executor::bindings::wasi::io;
-use spin_executor::bindings::wasi::io::streams::{InputStream, OutputStream, StreamError};
+use wasi::io;
+use wasi::io::streams::{InputStream, OutputStream, StreamError};
 
 use futures::{future, sink, stream, Sink, Stream};
 

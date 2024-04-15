@@ -31,6 +31,7 @@ bytes = "1"
 hyperium = { package = "http", version = "1.0.0" }
 serde_json = { version = "1.0.96", optional = true }
 serde = { version = "1.0.163", optional = true }
+wasi = { git = "https://github.com/bytecodealliance/wasi" }
 
 [features]
 default = ["export-sdk-language", "json"]
@@ -66,7 +67,13 @@ members = [
 http-body-util = "0.1.0"
 hyper = "1.2.0"
 reqwest = "0.11.24"
-tokio = { version = "1.36.0", features = ["fs", "process", "macros", "rt-multi-thread", "sync"] }
+tokio = { version = "1.36.0", features = [
+  "fs",
+  "process",
+  "macros",
+  "rt-multi-thread",
+  "sync",
+] }
 wasmtime = "18.0.1"
 wasmtime-wasi = "18.0.1"
 wasmtime-wasi-http = "18.0.1"
