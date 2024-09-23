@@ -12,12 +12,14 @@
 //! | `f64`      | floating64(float64) | DOUBLE PRECISION, FLOAT8     |
 //! | `String`   | str(string)         | VARCHAR, CHAR(N), TEXT       |
 //! | `Vec<u8>`  | binary(list\<u8\>)  | BYTEA                        |
+//! | `NaiveDate`| date                | Date                         |
 
 #[doc(inline)]
 pub use super::wit::v2::postgres::{Connection, Error as PgError};
 #[doc(inline)]
 pub use super::wit::v2::rdbms_types::*;
 
+use chrono::NaiveDate;
 /// A pg error
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -122,6 +124,15 @@ impl Decode for String {
     }
 }
 
+impl Decode for NaiveDate {
+    fn decode(value: &DbValue) -> Result<Self, Error> {
+        match value {
+            DbValue::Date(date) => Ok(*date),
+            _ => Err(Error::Decode(format_decode_err("DATE", value))),
+        }
+    }
+}
+
 fn format_decode_err(types: &str, value: &DbValue) -> String {
     format!("Expected {} from the DB but got {:?}", types, value)
 }
@@ -129,7 +140,7 @@ fn format_decode_err(types: &str, value: &DbValue) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use chrono::NaiveDate;
     #[test]
     fn boolean() {
         assert!(bool::decode(&DbValue::Boolean(true)).unwrap());
@@ -192,5 +203,13 @@ mod tests {
         assert!(Option::<Vec<u8>>::decode(&DbValue::DbNull)
             .unwrap()
             .is_none());
+    }
+    
+    #[test]
+    fn date() {
+        let date = NaiveDate::from_ymd(2023, 9, 21);
+        assert_eq!(NaiveDate::decode(&DbValue::Date(date)).unwrap(), date);
+        assert!(NaiveDate::decode(&DbValue::Int32(0)).is_err());
+        assert!(Option::<NaiveDate>::decode(&DbValue::DbNull).unwrap().is_none());
     }
 }
