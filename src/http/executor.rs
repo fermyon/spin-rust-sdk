@@ -1,5 +1,5 @@
-use crate::wit::wasi::http::outgoing_handler;
-use crate::wit::wasi::http::types::{
+use crate::wit::wasi::http0_2_0::outgoing_handler;
+use crate::wit::wasi::http0_2_0::types::{
     ErrorCode, IncomingBody, IncomingResponse, OutgoingBody, OutgoingRequest,
 };
 
