@@ -1,0 +1,71 @@
+name: "Examples"
+on:
+  push:
+    branches: ["main", "v*"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main", "v*"]
+    paths-ignore:
+      - "README.md"
+
+env:
+  RUST_VERSION: "1.73"
+  SPIN_VERSION: ""
+jobs:
+  examples:
+    runs-on: "ubuntu-latest"
+    name: Build Spin Example Apps
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "${{ env.RUST_VERSION }}"
+          targets: wasm32-wasi
+      - name: Install Spin
+        uses: fermyon/actions/spin/setup@v1
+      - name: Build hello-world
+        run: spin build
+        working-directory: ./examples/hello-world
+      - name: Build outbound-http
+        run: spin build
+        working-directory: ./examples/http-outbound
+      - name: Build spin-rust-router
+        run: spin build
+        working-directory: ./examples/http-router
+      - name: Build spin-rust-router
+        run: spin build
+        working-directory: ./examples/http-router-macro
+      - name: Build json-http-rust
+        run: spin build
+        working-directory: ./examples/json-http
+      - name: Build spin-key-value
+        run: spin build
+        working-directory: ./examples/key-value
+      - name: Build rust-outbound-mqtt-example
+        run: spin build
+        working-directory: ./examples/mqtt-outbound
+      - name: Build rust-outbound-mysql
+        run: spin build
+        working-directory: ./examples/mysql
+      - name: Build rust-outbound-pg-example
+        run: spin build
+        working-directory: ./examples/postgres
+      - name: Build spin-redis
+        run: spin build
+        working-directory: ./examples/redis
+      - name: Build async-spin-redis
+        run: spin build
+        working-directory: ./examples/redis-async
+      - name: Build rust-outbound-redis-example
+        run: spin build
+        working-directory: ./examples/redis-outbound
+      - name: Build spin-variables-rust
+        run: spin build
+        working-directory: ./examples/variables
+      - name: Build spin-wasi-http-streaming-file
+        run: spin build
+        working-directory: ./examples/wasi-http-streaming-file
+      - name: Build spin-wasi-http-async
+        run: spin build
+        working-directory: ./examples/wasi-http-streaming-outgoing-body
