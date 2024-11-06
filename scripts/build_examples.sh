@@ -20,12 +20,13 @@ for example in "$EXAMPLES_DIR"/*; do
     build_output=$(spin build 2>&1)
     build_status=$?
     
-    if [[ $build_status -eq 0 ]]; then
-      echo "✅ `$ spin build` succeeded for $example_name"
-    else
-      echo "❌ `$ spin build` failed for $example_name"
-    fi
     echo "$build_output"
+    
+    if [[ $build_status -eq 0 ]]; then
+      echo "✅ spin build succeeded for $example_name"
+    else
+      echo "❌ spin build failed for $example_name"
+    fi
     
     echo "::endgroup::"
     
