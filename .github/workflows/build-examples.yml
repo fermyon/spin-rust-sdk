@@ -1,0 +1,31 @@
+name: Build Examples
+
+on:
+  push:
+    branches: ["main", "v*"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main", "v*"]
+    paths-ignore:
+      - "README.md"
+
+env:
+  RUST_VERSION: "1.73"
+  SPIN_VERSION: ""
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "${{ env.RUST_VERSION }}"
+          targets: wasm32-wasi
+      - name: Install Spin
+        uses: fermyon/actions/spin/setup@v1
+      - name: Run build_examples.sh
+        run: |
+          chmod +x scripts/build_examples.sh
+          scripts/build_examples.sh
