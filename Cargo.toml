@@ -19,6 +19,7 @@ name = "spin_sdk"
 [dependencies]
 anyhow = "1"
 async-trait = "0.1.74"
+chrono = "0.4.38"
 form_urlencoded = "1.0"
 spin-executor = { version = "3.0.1", path = "crates/executor" }
 spin-macro = { version = "3.0.1", path = "crates/macro" }
@@ -52,6 +53,7 @@ members = [
   "examples/key-value",
   "examples/mysql",
   "examples/postgres",
+  "examples/postgres-v3",
   "examples/redis-outbound",
   "examples/mqtt-outbound",
   "examples/variables",

@@ -34,6 +34,7 @@ pub mod wit {
         }
     });
     pub use fermyon::spin2_0_0 as v2;
+    pub use spin::postgres::postgres as pg3;
 }
 
 /// Needed by the export macro
@@ -100,6 +101,9 @@ pub mod redis {
 
 /// Implementation of the spin postgres db interface.
 pub mod pg;
+
+/// Implementation of the spin postgres v3 db interface.
+pub mod pg3;
 
 /// Implementation of the Spin MySQL database interface.
 pub mod mysql;
