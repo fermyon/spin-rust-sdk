@@ -55,3 +55,15 @@ date: Sun, 25 Sep 2022 15:46:22 GMT
 
 Count: 3
 ```
+
+Curl the write_datetime_info route to experiment with date time types:
+```
+$ curl -i localhost:3000/write_datetime_info
+HTTP/1.1 200 OK
+content-length: 9
+date: Sun, 25 Sep 2022 15:46:22 GMT
+
+Count: 4
+```
+
+Read endpoint should now also show a row with publisheddate, publishedtime, publisheddatetime and readtime values.

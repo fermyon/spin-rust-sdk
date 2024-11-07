@@ -2,23 +2,25 @@
 //!
 //! # Types
 //!
-//! | Rust type  | WIT (db-value)                                | Postgres type(s)             |
-//! |------------|-----------------------------------------------|----------------------------- |
-//! | `bool`     | boolean(bool)                                 | BOOL                         |
-//! | `i16`      | int16(s16)                                    | SMALLINT, SMALLSERIAL, INT2  |
-//! | `i32`      | int32(s32)                                    | INT, SERIAL, INT4            |
-//! | `i64`      | int64(s64)                                    | BIGINT, BIGSERIAL, INT8      |
-//! | `f32`      | floating32(float32)                           | REAL, FLOAT4                 |
-//! | `f64`      | floating64(float64)                           | DOUBLE PRECISION, FLOAT8     |
-//! | `String`   | str(string)                                   | VARCHAR, CHAR(N), TEXT       |
-//! | `Vec<u8>`  | binary(list\<u8\>)                            | BYTEA                        |
-//! | `Date`     | date(tuple<s32, u8, u8>)                      | DATE                         |
-//! | `Time`     | time(tuple<u8, u8, u8, u32>)                  | TIME                         |
-//! | `Datetime` | datetime(tuple<s32, u8, u8, u8, u8, u8, u32>) | TIMESTAMP                    |
-//! | `Timestamp`| timestamp(s64)                                | BIGINT                       |
+//! | Rust type               | WIT (db-value)                                | Postgres type(s)             |
+//! |-------------------------|-----------------------------------------------|----------------------------- |
+//! | `bool`                  | boolean(bool)                                 | BOOL                         |
+//! | `i16`                   | int16(s16)                                    | SMALLINT, SMALLSERIAL, INT2  |
+//! | `i32`                   | int32(s32)                                    | INT, SERIAL, INT4            |
+//! | `i64`                   | int64(s64)                                    | BIGINT, BIGSERIAL, INT8      |
+//! | `f32`                   | floating32(float32)                           | REAL, FLOAT4                 |
+//! | `f64`                   | floating64(float64)                           | DOUBLE PRECISION, FLOAT8     |
+//! | `String`                | str(string)                                   | VARCHAR, CHAR(N), TEXT       |
+//! | `Vec<u8>`               | binary(list\<u8\>)                            | BYTEA                        |
+//! | `chrono::NaiveDate`     | date(tuple<s32, u8, u8>)                      | DATE                         |
+//! | `chrono::NaiveTime`     | time(tuple<u8, u8, u8, u32>)                  | TIME                         |
+//! | `chrono::NaiveDateTime` | datetime(tuple<s32, u8, u8, u8, u8, u8, u32>) | TIMESTAMP                    |
+//! | `chrono::Duration`      | timestamp(s64)                                | BIGINT                       |
 
 #[doc(inline)]
 pub use super::wit::pg3::{Error as PgError, *};
+
+use chrono::{Datelike, Timelike};
 
 /// A pg error
 #[derive(Debug, thiserror::Error)]
@@ -124,11 +126,7 @@ impl Decode for String {
     }
 }
 
-/// Native representation of the WIT postgres Date value.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Date(pub chrono::NaiveDate);
-
-impl Decode for Date {
+impl Decode for chrono::NaiveDate {
     fn decode(value: &DbValue) -> Result<Self, Error> {
         match value {
             DbValue::Date((year, month, day)) => {
@@ -140,18 +138,14 @@ impl Decode for Date {
                                 year, month, day
                             ))
                         })?;
-                Ok(Date(naive_date))
+                Ok(naive_date)
             }
             _ => Err(Error::Decode(format_decode_err("DATE", value))),
         }
     }
 }
 
-/// Native representation of the WIT postgres Time value.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Time(pub chrono::NaiveTime);
-
-impl Decode for Time {
+impl Decode for chrono::NaiveTime {
     fn decode(value: &DbValue) -> Result<Self, Error> {
         match value {
             DbValue::Time((hour, minute, second, nanosecond)) => {
@@ -167,18 +161,14 @@ impl Decode for Time {
                         hour, minute, second, nanosecond
                     ))
                 })?;
-                Ok(Time(naive_time))
+                Ok(naive_time)
             }
             _ => Err(Error::Decode(format_decode_err("TIME", value))),
         }
     }
 }
 
-/// Native representation of the WIT postgres DateTime value.
-#[derive(Clone, Debug, PartialEq)]
-pub struct DateTime(pub chrono::NaiveDateTime);
-
-impl Decode for DateTime {
+impl Decode for chrono::NaiveDateTime {
     fn decode(value: &DbValue) -> Result<Self, Error> {
         match value {
             DbValue::Datetime((year, month, day, hour, minute, second, nanosecond)) => {
@@ -203,9 +193,88 @@ impl Decode for DateTime {
                     ))
                 })?;
                 let dt = chrono::NaiveDateTime::new(naive_date, naive_time);
-                Ok(DateTime(dt))
+                Ok(dt)
             }
             _ => Err(Error::Decode(format_decode_err("DATETIME", value))),
+        }
+    }
+}
+
+impl Decode for chrono::Duration {
+    fn decode(value: &DbValue) -> Result<Self, Error> {
+        match value {
+            DbValue::Timestamp(n) => Ok(chrono::Duration::seconds(*n)),
+            _ => Err(Error::Decode(format_decode_err("BIGINT", value))),
+        }
+    }
+}
+
+macro_rules! impl_parameter_value_conversions {
+    ($($ty:ty => $id:ident),*) => {
+        $(
+            impl From<$ty> for ParameterValue {
+                fn from(v: $ty) -> ParameterValue {
+                    ParameterValue::$id(v)
+                }
+            }
+        )*
+    };
+}
+
+impl_parameter_value_conversions! {
+    i8 => Int8,
+    i16 => Int16,
+    i32 => Int32,
+    i64 => Int64,
+    f32 => Floating32,
+    f64 => Floating64,
+    bool => Boolean,
+    String => Str,
+    Vec<u8> => Binary
+}
+
+impl From<chrono::NaiveDateTime> for ParameterValue {
+    fn from(v: chrono::NaiveDateTime) -> ParameterValue {
+        ParameterValue::Datetime((
+            v.year(),
+            v.month() as u8,
+            v.day() as u8,
+            v.hour() as u8,
+            v.minute() as u8,
+            v.second() as u8,
+            v.nanosecond(),
+        ))
+    }
+}
+
+impl From<chrono::NaiveTime> for ParameterValue {
+    fn from(v: chrono::NaiveTime) -> ParameterValue {
+        ParameterValue::Time((
+            v.hour() as u8,
+            v.minute() as u8,
+            v.second() as u8,
+            v.nanosecond(),
+        ))
+    }
+}
+
+impl From<chrono::NaiveDate> for ParameterValue {
+    fn from(v: chrono::NaiveDate) -> ParameterValue {
+        ParameterValue::Date((v.year(), v.month() as u8, v.day() as u8))
+    }
+}
+
+impl From<chrono::TimeDelta> for ParameterValue {
+    fn from(v: chrono::TimeDelta) -> ParameterValue {
+        ParameterValue::Timestamp(v.num_seconds())
+    }
+}
+
+impl<T: Into<ParameterValue>> From<Option<T>> for ParameterValue {
+    fn from(o: Option<T>) -> ParameterValue {
+        match o {
+            Some(v) => v.into(),
+            None => ParameterValue::DbNull,
         }
     }
 }
@@ -216,6 +285,8 @@ fn format_decode_err(types: &str, value: &DbValue) -> String {
 
 #[cfg(test)]
 mod tests {
+    use chrono::NaiveDateTime;
+
     use super::*;
 
     #[test]
@@ -285,27 +356,31 @@ mod tests {
     #[test]
     fn date() {
         assert_eq!(
-            Date::decode(&DbValue::Date((1, 2, 4))).unwrap(),
-            Date(chrono::NaiveDate::from_ymd_opt(1, 2, 4).unwrap())
+            chrono::NaiveDate::decode(&DbValue::Date((1, 2, 4))).unwrap(),
+            chrono::NaiveDate::from_ymd_opt(1, 2, 4).unwrap()
         );
         assert_ne!(
-            Date::decode(&DbValue::Date((1, 2, 4))).unwrap(),
-            Date(chrono::NaiveDate::from_ymd_opt(1, 2, 5).unwrap())
+            chrono::NaiveDate::decode(&DbValue::Date((1, 2, 4))).unwrap(),
+            chrono::NaiveDate::from_ymd_opt(1, 2, 5).unwrap()
         );
-        assert!(Option::<Date>::decode(&DbValue::DbNull).unwrap().is_none());
+        assert!(Option::<chrono::NaiveDate>::decode(&DbValue::DbNull)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
     fn time() {
         assert_eq!(
-            Time::decode(&DbValue::Time((1, 2, 3, 4))).unwrap(),
-            Time(chrono::NaiveTime::from_hms_nano_opt(1, 2, 3, 4).unwrap())
+            chrono::NaiveTime::decode(&DbValue::Time((1, 2, 3, 4))).unwrap(),
+            chrono::NaiveTime::from_hms_nano_opt(1, 2, 3, 4).unwrap()
         );
         assert_ne!(
-            Time::decode(&DbValue::Time((1, 2, 3, 4))).unwrap(),
-            Time(chrono::NaiveTime::from_hms_nano_opt(1, 2, 4, 5).unwrap())
+            chrono::NaiveTime::decode(&DbValue::Time((1, 2, 3, 4))).unwrap(),
+            chrono::NaiveTime::from_hms_nano_opt(1, 2, 4, 5).unwrap()
         );
-        assert!(Option::<Time>::decode(&DbValue::DbNull).unwrap().is_none());
+        assert!(Option::<chrono::NaiveTime>::decode(&DbValue::DbNull)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -313,16 +388,31 @@ mod tests {
         let date = chrono::NaiveDate::from_ymd_opt(1, 2, 3).unwrap();
         let mut time = chrono::NaiveTime::from_hms_nano_opt(4, 5, 6, 7).unwrap();
         assert_eq!(
-            DateTime::decode(&DbValue::Datetime((1, 2, 3, 4, 5, 6, 7))).unwrap(),
-            DateTime(chrono::NaiveDateTime::new(date, time))
+            chrono::NaiveDateTime::decode(&DbValue::Datetime((1, 2, 3, 4, 5, 6, 7))).unwrap(),
+            chrono::NaiveDateTime::new(date, time)
         );
 
         time = chrono::NaiveTime::from_hms_nano_opt(4, 5, 6, 8).unwrap();
         assert_ne!(
-            DateTime::decode(&DbValue::Datetime((1, 2, 3, 4, 5, 6, 7))).unwrap(),
-            DateTime(chrono::NaiveDateTime::new(date, time))
+            NaiveDateTime::decode(&DbValue::Datetime((1, 2, 3, 4, 5, 6, 7))).unwrap(),
+            chrono::NaiveDateTime::new(date, time)
         );
-        assert!(Option::<DateTime>::decode(&DbValue::DbNull)
+        assert!(Option::<chrono::NaiveDateTime>::decode(&DbValue::DbNull)
+            .unwrap()
+            .is_none());
+    }
+
+    #[test]
+    fn timestamp() {
+        assert_eq!(
+            chrono::Duration::decode(&DbValue::Timestamp(1)).unwrap(),
+            chrono::Duration::seconds(1),
+        );
+        assert_ne!(
+            chrono::Duration::decode(&DbValue::Timestamp(2)).unwrap(),
+            chrono::Duration::seconds(1)
+        );
+        assert!(Option::<chrono::Duration>::decode(&DbValue::DbNull)
             .unwrap()
             .is_none());
     }

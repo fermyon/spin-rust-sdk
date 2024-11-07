@@ -3,11 +3,14 @@ CREATE TABLE articletest (
    title varchar(40) NOT NULL,
    content text NOT NULL,
    authorname varchar(40) NOT NULL ,
-   published date NOT NULL,
+   publisheddate date NOT NULL,
+   publishedtime time,
+   publisheddatetime timestamp,
+   readtime bigint,
    coauthor text
 );
 
-INSERT INTO articletest (title, content, authorname, published) VALUES
+INSERT INTO articletest (title, content, authorname, publisheddate) VALUES
 (
    'My Life as a Goat',
    'I went to Nepal to live as a goat, and it was much better than being a butler.',

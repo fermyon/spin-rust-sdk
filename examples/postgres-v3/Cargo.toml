@@ -13,4 +13,5 @@ anyhow = "1"
 http = "1.0.0"
 # The Spin SDK.
 spin-sdk = { path = "../.." }
-
+# For handling date/time types
+chrono = "0.4.38"
