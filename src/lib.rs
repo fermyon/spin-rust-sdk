@@ -31,7 +31,8 @@ pub mod wit {
             "wasi:io/error@0.2.0": spin_executor::bindings::wasi::io::error,
             "wasi:io/streams@0.2.0": spin_executor::bindings::wasi::io::streams,
             "wasi:io/poll@0.2.0": spin_executor::bindings::wasi::io::poll,
-        }
+        },
+        generate_all,
     });
     pub use fermyon::spin2_0_0 as v2;
     pub use spin::postgres::postgres as pg3;

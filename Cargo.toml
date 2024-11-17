@@ -90,6 +90,6 @@ rust-version = "1.73"
 homepage = "https://developer.fermyon.com/spin/v2/rust-components"
 
 [workspace.dependencies]
-wit-bindgen = "0.16.0"
+wit-bindgen = "0.34.0"
 futures = "0.3.28"
 once_cell = "1.18.0"
