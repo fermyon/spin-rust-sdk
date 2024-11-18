@@ -10,7 +10,7 @@ on:
       - "README.md"
 
 env:
-  RUST_VERSION: "1.73"
+  RUST_VERSION: "1.76"
   SPIN_VERSION: ""
 
 jobs:

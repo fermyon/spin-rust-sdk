@@ -86,7 +86,7 @@ authors = ["Fermyon Engineering <engineering@fermyon.com>"]
 edition = "2021"
 license = "Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/fermyon/spin-rust-sdk"
-rust-version = "1.73"
+rust-version = "1.76"
 homepage = "https://developer.fermyon.com/spin/v2/rust-components"
 
 [workspace.dependencies]
