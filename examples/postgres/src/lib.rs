@@ -17,6 +17,8 @@ struct Article {
     content: String,
     authorname: String,
     coauthor: Option<String>,
+    authorage: Option<f32>,
+    authorheight: Option<f64>,
 }
 
 impl TryFrom<&pg::Row> for Article {
@@ -28,6 +30,8 @@ impl TryFrom<&pg::Row> for Article {
         let content = String::decode(&row[2])?;
         let authorname = String::decode(&row[3])?;
         let coauthor = Option::<String>::decode(&row[4])?;
+        let authorage = Option::<f32>::decode(&row[5])?;
+        let authorheight = Option::<f64>::decode(&row[6])?;
 
         Ok(Self {
             id,
@@ -35,6 +39,8 @@ impl TryFrom<&pg::Row> for Article {
             content,
             authorname,
             coauthor,
+            authorage,
+            authorheight,
         })
     }
 }
@@ -55,7 +61,8 @@ fn read(_req: Request<()>) -> Result<Response<String>> {
     let address = std::env::var(DB_URL_ENV)?;
     let conn = pg::Connection::open(&address)?;
 
-    let sql = "SELECT id, title, content, authorname, coauthor FROM articletest";
+    let sql =
+        "SELECT id, title, content, authorname, coauthor, authorage, authorheight FROM articletest";
     let rowset = conn.query(sql, &[])?;
 
     let column_summary = rowset
@@ -90,7 +97,7 @@ fn write(_req: Request<()>) -> Result<Response<String>> {
     let address = std::env::var(DB_URL_ENV)?;
     let conn = pg::Connection::open(&address)?;
 
-    let sql = "INSERT INTO articletest (title, content, authorname) VALUES ('aaa', 'bbb', 'ccc')";
+    let sql = "INSERT INTO articletest (title, content, authorname, authorage, authorheight) VALUES ('aaa', 'bbb', 'ccc', 1.1, 2.22)";
     let nrow_executed = conn.execute(sql, &[])?;
 
     println!("nrow_executed: {}", nrow_executed);
