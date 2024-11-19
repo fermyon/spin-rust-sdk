@@ -3,17 +3,23 @@ CREATE TABLE articletest (
    title varchar(40) NOT NULL,
    content text NOT NULL,
    authorname varchar(40) NOT NULL,
-   coauthor text
+   coauthor text,
+   authorage real,
+   authorheight double precision
 );
 
-INSERT INTO articletest (title, content, authorname) VALUES
+INSERT INTO articletest (title, content, authorname, authorage, authorheight) VALUES
 (
    'My Life as a Goat',
    'I went to Nepal to live as a goat, and it was much better than being a butler.',
-   'E. Blackadder'
+   'E. Blackadder',
+   '22.1',
+   '72.23'
 ),
 (
    'Magnificent Octopus',
    'Once upon a time there was a lovely little sausage.',
-   'S. Baldrick'
+   'S. Baldrick',
+   '11.2',
+   '50.48'
 );
