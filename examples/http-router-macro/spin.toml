@@ -11,8 +11,8 @@ route = "/..."
 component = "route"
 
 [component.route]
-source = "../../target/wasm32-wasi/release/http_rust_router_macro.wasm"
+source = "../../target/wasm32-wasip1/release/http_rust_router_macro.wasm"
 description = "A component that internally routes HTTP requests."
 [component.route.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasip1 --release"
 watch = ["src/**/*.rs", "Cargo.toml", "spin.toml"]

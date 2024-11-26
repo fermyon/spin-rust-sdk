@@ -14,6 +14,6 @@ channel = "messages"
 component = "echo-message"
 
 [component.echo-message]
-source = "../../target/wasm32-wasi/release/async_spin_redis.wasm"
+source = "../../target/wasm32-wasip1/release/async_spin_redis.wasm"
 [component.echo-message.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasip1 --release"

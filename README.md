@@ -77,10 +77,10 @@ route = "/..."
 component = "hello-world"
 
 [component.hello-world]
-source = "target/wasm32-wasi/release/hello_world.wasm"
+source = "target/wasm32-wasip1/release/hello_world.wasm"
 allowed_outbound_hosts = ["https://random-data-api.fermyon.app"]
 [component.hello-world.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasip1 --release"
 watch = ["src/**/*.rs", "Cargo.toml"]
 ```
 
@@ -90,7 +90,7 @@ Spin build can be used to build all components defined in the Spin manifest file
 
 ```bash
 $ spin build --up
-Building component hello-world with `cargo build --target wasm32-wasi --release`
+Building component hello-world with `cargo build --target wasm32-wasip1 --release`
     Finished release [optimized] target(s) in 0.12s
 Finished building all Spin components
 Logging component stdio to ".spin/logs/"

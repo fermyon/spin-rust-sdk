@@ -11,8 +11,8 @@ route = "/..."
 component = "json-demo"
 
 [component.json-demo]
-source = "../../target/wasm32-wasi/release/json_http_rust.wasm"
+source = "../../target/wasm32-wasip1/release/json_http_rust.wasm"
 description = "Parses 'name' from the POST body and responds using it."
 [component.json-demo.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasip1 --release"
 watch = ["src/**/*.rs", "Cargo.toml"]

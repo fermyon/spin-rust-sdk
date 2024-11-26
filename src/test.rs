@@ -58,7 +58,7 @@ async fn build_component(name: &str) -> Result<Vec<u8>> {
             assert!(
                 Command::new("cargo")
                     .current_dir("test-cases")
-                    .args(["build", "--workspace", "--target", "wasm32-wasi"])
+                    .args(["build", "--workspace", "--target", "wasm32-wasip1"])
                     .status()
                     .await
                     .unwrap()
@@ -72,7 +72,7 @@ async fn build_component(name: &str) -> Result<Vec<u8>> {
 
     ComponentEncoder::default()
         .validate(true)
-        .module(&fs::read(format!("target/wasm32-wasi/debug/{name}.wasm")).await?)?
+        .module(&fs::read(format!("target/wasm32-wasip1/debug/{name}.wasm")).await?)?
         .adapter("wasi_snapshot_preview1", &fs::read(ADAPTER_PATH).await?)?
         .encode()
 }

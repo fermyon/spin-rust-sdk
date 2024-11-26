@@ -9,7 +9,7 @@ on:
       - "README.md"
  
 env:
-  RUST_VERSION: 1.73
+  RUST_VERSION: 1.78
  
 jobs:
   lint-and-test:
@@ -27,7 +27,7 @@ jobs:
         run: |
           rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
           rustup default ${{ env.RUST_VERSION }}
-          rustup target add wasm32-wasi
+          rustup target add wasm32-wasip1
 
       - name: Lint
         shell: bash
