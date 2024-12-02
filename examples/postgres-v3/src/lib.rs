@@ -126,7 +126,7 @@ fn write(_req: Request<()>) -> Result<Response<String>> {
     let conn = pg3::Connection::open(&address)?;
 
     let sql =
-        "INSERT INTO articletest (title, content, authorname, published) VALUES ('aaa', 'bbb', 'ccc', '2024-01-01')";
+        "INSERT INTO articletest (title, content, authorname, publisheddate) VALUES ('aaa', 'bbb', 'ccc', '2024-01-01')";
     let nrow_executed = conn.execute(sql, &[])?;
 
     println!("nrow_executed: {}", nrow_executed);
