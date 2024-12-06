@@ -11,8 +11,8 @@ route = "/..."
 component = "spin-wasi-http-streaming-file"
 
 [component.spin-wasi-http-streaming-file]
-source = "../../target/wasm32-wasi/release/spin_wasi_http_streaming_file.wasm"
+source = "../../target/wasm32-wasip1/release/spin_wasi_http_streaming_file.wasm"
 files = [{ source = "../..", destination = "/" }]
 [component.spin-wasi-http-streaming-file.build]
-command = "cargo build --target wasm32-wasi --release"
+command = "cargo build --target wasm32-wasip1 --release"
 watch = ["src/**/*.rs", "Cargo.toml"]

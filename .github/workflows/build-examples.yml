@@ -10,7 +10,7 @@ on:
       - "README.md"
 
 env:
-  RUST_VERSION: "1.73"
+  RUST_VERSION: "1.78"
   SPIN_VERSION: ""
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: "${{ env.RUST_VERSION }}"
-          targets: wasm32-wasi
+          targets: wasm32-wasip1
       - name: Install Spin
         uses: fermyon/actions/spin/setup@v1
       - name: Run build_examples.sh
