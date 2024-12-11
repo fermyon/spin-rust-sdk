@@ -2,14 +2,25 @@
 
 This example shows how to access a PostgreSQL database from Spin component.
 
-## Spin up
+## Prerequisite: Postgres
 
-From example root:
+This example assumes postgres is running and accessible locally via its standard 5432 port.
+
+We suggest running the `postgres` Docker container which has the necessary postgres user permissions
+already configured. For example:
 
 ```
-createdb spin_dev
-psql -d spin_dev -f db/testdata.sql
-RUST_LOG=spin=trace spin build --up
+docker run --rm -h 127.0.0.1 -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres
+```
+
+## Spin up
+
+Then, run the following from the root of this example:
+
+```
+createdb -h localhost -U postgres spin_dev
+psql -h localhost -U postgres -d spin_dev -f db/testdata.sql
+spin build --up
 ```
 
 Curl the read route:
