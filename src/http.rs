@@ -578,7 +578,7 @@ impl OutgoingRequest {
 }
 
 /// The out param for setting an `OutgoingResponse`
-pub struct ResponseOutparam(types::ResponseOutparam);
+pub struct ResponseOutparam(pub(crate) types::ResponseOutparam);
 
 impl ResponseOutparam {
     #[doc(hidden)]
@@ -741,6 +741,25 @@ pub mod responses {
     pub(crate) fn bad_request(msg: Option<String>) -> Response {
         Response::new(400, msg.map(|m| m.into_bytes()))
     }
+}
+
+thread_local! {
+    /// TODO
+    pub static CURRENT_OUTPARAM: std::cell::RefCell<Option<ResponseOutparam>> = std::cell::RefCell::new(None);
+}
+
+/// TODO
+pub fn send_informational(status: u16, headers: Vec<(String, Vec<u8>)>) -> anyhow::Result<()> {
+    CURRENT_OUTPARAM.with(|outparam| {
+        let outparam = outparam.borrow();
+        let outparam = outparam.as_ref().expect("");
+        let fields = Fields::new();
+        for (name, value) in headers {
+            fields.append(&name, &value)?;
+        }
+        super::wit::spin::http::http::send_informational(&outparam.0, status, fields);
+        Ok(())
+    })
 }
 
 #[cfg(test)]

@@ -95,7 +95,19 @@ pub fn http_component(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let handler = if is_native_wasi_http_handler {
         quote! { super::#func_name(req, response_out)#await_postfix }
     } else {
-        quote! { handle_response(response_out, super::#func_name(req)#await_postfix).await }
+        quote! {{
+            // This is a bit of a hack to get around the fact that we can't pass the response_out
+            // to the function directly. Instead we set it in a thread local and then read it back
+            // out in the function.
+            ::spin_sdk::http::CURRENT_OUTPARAM.with(|outparam| {
+                *outparam.borrow_mut() = Some(response_out);
+            });
+            let response = super::#func_name(req)#await_postfix;
+            let response_out = ::spin_sdk::http::CURRENT_OUTPARAM.with(|outparam| {
+                outparam.borrow_mut().take().expect("response_out not set")
+            });
+            handle_response(response_out, response).await
+        }}
     };
 
     quote!(
