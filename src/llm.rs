@@ -1,7 +1,49 @@
-pub use crate::wit::v2::llm::{
-    self, EmbeddingsResult, EmbeddingsUsage, Error, InferencingParams, InferencingResult,
-    InferencingUsage,
-};
+pub use crate::wit::v2::llm::{Error, InferencingParams, InferencingResult, InferencingUsage};
+
+/// Provides access to the underlying WIT interface. You should not normally need
+/// to use this module: use the re-exports in this module instead.
+#[doc(inline)]
+pub use crate::wit::v2::llm;
+
+/// The result of generating embeddings.
+///
+/// # Examples
+///
+/// Generate embeddings using the all-minilm-l6-v2 LLM.
+///
+/// ```no_run
+/// use spin_sdk::llm;
+///
+/// # fn main() -> anyhow::Result<()> {
+/// let text = &[
+///     "I've just broken a priceless turnip".to_owned(),
+/// ];
+///
+/// let embed_result = llm::generate_embeddings(llm::EmbeddingModel::AllMiniLmL6V2, text)?;
+///
+/// println!("prompt token count: {}", embed_result.usage.prompt_token_count);
+/// println!("embedding: {:?}", embed_result.embeddings.first());
+/// # Ok(())
+/// # }
+/// ```
+#[doc(inline)]
+pub use crate::wit::v2::llm::EmbeddingsResult;
+
+/// Usage related to an embeddings generation request.
+///
+/// # Examples
+///
+/// ```no_run
+/// use spin_sdk::llm;
+///
+/// # fn main() -> anyhow::Result<()> {
+/// # let text = &[];
+/// let embed_result = llm::generate_embeddings(llm::EmbeddingModel::AllMiniLmL6V2, text)?;
+/// println!("prompt token count: {}", embed_result.usage.prompt_token_count);
+/// # Ok(())
+/// # }
+/// ```
+pub use crate::wit::v2::llm::EmbeddingsUsage;
 
 /// The model use for inferencing
 #[allow(missing_docs)]

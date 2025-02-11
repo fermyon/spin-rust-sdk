@@ -11,7 +11,7 @@ pub mod key_value;
 /// SQLite storage.
 pub mod sqlite;
 
-/// Large Language Model APIs
+/// Large Language Model (Serverless AI) APIs
 pub mod llm;
 
 /// Exports the procedural macros for writing handlers for Spin components.
@@ -57,13 +57,13 @@ extern "C" fn __spin_sdk_hash() {}
 /// Helpers for building Spin `wasi-http` components.
 pub mod http;
 
-/// Implementation of the spin mqtt interface.
+/// MQTT messaging.
 #[allow(missing_docs)]
 pub mod mqtt {
     pub use super::wit::v2::mqtt::{Connection, Error, Payload, Qos};
 }
 
-/// Implementation of the spin redis interface.
+/// Redis storage and messaging.
 #[allow(missing_docs)]
 pub mod redis {
     use std::hash::{Hash, Hasher};
@@ -99,16 +99,18 @@ pub mod redis {
     }
 }
 
-/// Implementation of the spin postgres db interface.
+/// Spin 2 Postgres relational database storage. Applications that do not require
+/// Spin 2 support should use the `pg3` module instead.
 pub mod pg;
 
-/// Implementation of the spin postgres v3 db interface.
+/// Postgres relational database storage.
 pub mod pg3;
 
-/// Implementation of the Spin MySQL database interface.
+/// MySQL relational database storage.
 pub mod mysql;
 
 #[doc(inline)]
+/// Component configuration variables.
 pub use wit::v2::variables;
 
 #[doc(hidden)]
