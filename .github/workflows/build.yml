@@ -39,3 +39,6 @@ jobs:
         shell: bash
         run: cargo test --workspace
         
+      - name: Validate docs examples
+        shell: bash
+        run: cargo test --doc

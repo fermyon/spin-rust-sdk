@@ -7,8 +7,8 @@ use std::collections::HashMap;
 pub use conversions::IntoResponse;
 #[doc(inline)]
 pub use types::{
-    ErrorCode, Fields, Headers, IncomingRequest, IncomingResponse, Method, OutgoingBody,
-    OutgoingRequest, OutgoingResponse, Scheme, StatusCode, Trailers,
+    ErrorCode, Headers, IncomingResponse, Method, OutgoingBody, OutgoingRequest, Scheme,
+    StatusCode, Trailers,
 };
 
 use self::conversions::{TryFromIncomingResponse, TryIntoOutgoingRequest};
@@ -16,10 +16,253 @@ use super::wit::wasi::http0_2_0::types;
 use futures::SinkExt;
 use spin_executor::bindings::wasi::io::streams::{self, StreamError};
 
+/// Represents an incoming HTTP request.
+///
+/// If you don't need streaming access to the request body, you may find it
+/// easier to work with [Request] instead. To make outgoing requests, use
+/// [Request] (non-streaming) or [OutgoingRequest].
+///
+/// # Examples
+///
+/// Access the request body as a Rust stream:
+///
+/// ```no_run
+/// # use spin_sdk::http::{IncomingRequest, ResponseOutparam};
+/// async fn handle_request(req: IncomingRequest, response_outparam: ResponseOutparam) {
+///     use futures::stream::StreamExt;
+///
+///     let mut stream = req.into_body_stream();
+///     loop {
+///         let chunk = stream.next().await;
+///         match chunk {
+///             None => {
+///                 println!("end of request body");
+///                 break;
+///             }
+///             Some(Ok(chunk)) => {
+///                 // process the data from the stream in a very realistic way
+///                 println!("read {} bytes", chunk.len());
+///             }
+///             Some(Err(e)) => {
+///                 println!("error reading body: {e:?}");
+///                 break;
+///             }
+///         }
+///     }
+/// }
+/// ```
+///
+/// Access the body in a non-streaming way. This can be useful where your component
+/// must take IncomingRequest because some scenarios need streaming, but you
+/// have other scenarios that do not.
+///
+/// ```no_run
+/// # use spin_sdk::http::{IncomingRequest, ResponseOutparam};
+/// async fn handle_request(req: IncomingRequest, response_outparam: ResponseOutparam) {
+///     let body = req.into_body().await.unwrap();
+/// }
+/// ```
+#[doc(inline)]
+pub use types::IncomingRequest;
+
+/// Represents an outgoing HTTP response.
+///
+/// OutgoingResponse is used in conjunction with [ResponseOutparam] in cases where
+/// you want to stream the response body. In cases where you don't need to stream,
+/// it is often simpler to use [Response].
+///
+/// # Examples
+///
+/// Send a streaming response to an incoming request:
+///
+/// ```no_run
+/// # use spin_sdk::http::{Fields, IncomingRequest, OutgoingResponse, ResponseOutparam};
+/// async fn handle_request(req: IncomingRequest, response_outparam: ResponseOutparam) {
+///     use futures::SinkExt;
+///     use std::io::Read;
+///
+///     let response_headers = Fields::from_list(&[
+///         ("content-type".to_owned(), "text/plain".into())
+///     ]).unwrap();
+///
+///     let response = OutgoingResponse::new(response_headers);
+///     response.set_status_code(200).unwrap();
+///     let mut response_body = response.take_body();
+///
+///     response_outparam.set(response);
+///
+///     let mut file = std::fs::File::open("war-and-peace.txt").unwrap();
+///
+///     loop {
+///         let mut buf = vec![0; 1024];
+///         let count = file.read(&mut buf).unwrap();
+///
+///         if count == 0 {
+///             break;  // end of file
+///         }
+///
+///         buf.truncate(count);
+///         response_body.send(buf).await.unwrap();
+///     }
+/// }
+/// ```
+///
+/// Send a response then continue processing:
+///
+/// ```no_run
+/// # use spin_sdk::http::{Fields, IncomingRequest, OutgoingResponse, ResponseOutparam};
+/// async fn handle_request(req: IncomingRequest, response_outparam: ResponseOutparam) {
+///     use futures::SinkExt;
+///
+///     let response_headers = Fields::from_list(&[
+///         ("content-type".to_owned(), "text/plain".into())
+///     ]).unwrap();
+///
+///     let response = OutgoingResponse::new(response_headers);
+///     response.set_status_code(200).unwrap();
+///     let mut response_body = response.take_body();
+///
+///     response_outparam.set(response);
+///
+///     response_body
+///         .send("Request accepted".as_bytes().to_vec())
+///         .await
+///         .unwrap();
+///
+///     // End the HTTP response so the client deems it complete.
+///     response_body.flush().await.unwrap();
+///     response_body.close().await.unwrap();
+///     drop(response_body);
+///
+///     // Perform any additional processing
+///     println!("While the cat's away, the mice will play");
+/// }
+/// ```
+#[doc(inline)]
+pub use types::OutgoingResponse;
+
+/// A common representation for headers and trailers.
+///
+/// # Examples
+///
+/// Initialise response headers from a list:
+///
+/// ```no_run
+/// # use spin_sdk::http::{Fields, IncomingRequest, OutgoingResponse};
+/// # fn handle_request(req: IncomingRequest) {
+/// let response_headers = Fields::from_list(&[
+///     ("content-type".to_owned(), "text/plain".into())
+/// ]).unwrap();
+///
+/// let response = OutgoingResponse::new(response_headers);
+/// # }
+/// ```
+///
+/// Build response headers up dynamically:
+///
+/// ```no_run
+/// # use spin_sdk::http::{Fields, IncomingRequest, OutgoingResponse};
+/// # fn handle_request(req: IncomingRequest) {
+/// let accepts_json = req.headers()
+///     .get(&"accept".to_owned())
+///     .iter()
+///     .flat_map(|v| String::from_utf8(v.clone()).ok())
+///     .any(|s| s == "application/json");
+///
+/// let response_headers = Fields::new();
+/// if accepts_json {
+///     response_headers.set(&"content-type".to_owned(), &["application/json".into()]).unwrap();
+/// };
+/// # }
+/// ```
+///
+/// # WASI resource documentation
+///
+#[doc(inline)]
+pub use types::Fields;
+
 /// A unified request object that can represent both incoming and outgoing requests.
 ///
-/// This should be used in favor of `IncomingRequest` and `OutgoingRequest` when there
+/// This should be used in favor of [IncomingRequest] and [OutgoingRequest] when there
 /// is no need for streaming bodies.
+///
+/// # Examples
+///
+/// Read the method, a header, and the body an incoming HTTP request, without streaming:
+///
+/// ```no_run
+/// # use spin_sdk::http::{Method, Request, Response};
+///
+/// fn handle_request(req: Request) -> anyhow::Result<Response> {
+///     let method = req.method();
+///     let content_type = req.header("content-type");
+///     if *method == Method::Post {
+///         let body = String::from_utf8_lossy(req.body());
+///     }
+///     todo!()
+/// }
+/// ```
+///
+/// Send an outgoing GET request (no body) to `example.com`:
+///
+/// ```no_run
+/// use spin_sdk::http::{Request, Response};
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let request = Request::get("https://example.com");
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Send an outgoing POST request with a non-streaming body to `example.com`.
+///
+/// ```no_run
+/// use spin_sdk::http::{Request, Response};
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let request = Request::post("https://example.com", "it's a-me, Spin")
+///     .header("content-type", "text/plain")
+///     .build();
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Build and send an outgoing request without using the helper shortcut.
+///
+/// ```no_run
+/// use spin_sdk::http::{Method, Request, Response};
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let mut request = Request::new(Method::Put, "https://example.com/message/safety");
+/// request.set_header("content-type", "text/plain");
+/// *request.body_mut() = "beware the crocodile".as_bytes().to_vec();
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Build and send an outgoing request using the fluent builder.
+///
+/// ```no_run
+/// use spin_sdk::http::{Method, Request, Response};
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let request = Request::builder()
+///     .uri("https://example.com/message/motivational")
+///     .method(Method::Put)
+///     .header("content-type", "text/plain")
+///     .body("the capybaras of creativity fly higher than the bluebirds of banality")
+///     .build();
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct Request {
     /// The method of the request
     method: Method,
@@ -179,7 +422,44 @@ impl Request {
     }
 }
 
-/// A request builder
+/// A builder for non-streaming outgoing HTTP requests. You can obtain
+/// a RequestBuilder from the [Request::builder()] method, or from
+/// method-specific helpers such as [Request::get()] or [Request::post()].
+///
+/// # Examples
+///
+/// Use a method helper to build an outgoing POST request:
+///
+/// ```no_run
+/// use spin_sdk::http::{Request, Response};
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let request = Request::post("https://example.com", "it's a-me, Spin")
+///     .header("content-type", "text/plain")
+///     .build();
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Build and send an outgoing request using the RequestBuilder.
+///
+/// ```no_run
+/// use spin_sdk::http::{Method, Request, Response};
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let request = Request::builder()
+///     .uri("https://example.com/message/motivational")
+///     .method(Method::Put)
+///     .header("content-type", "text/plain")
+///     .body("the capybaras of creativity fly higher than the bluebirds of banality")
+///     .build();
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct RequestBuilder {
     request: Request,
 }
@@ -234,6 +514,43 @@ impl RequestBuilder {
 ///
 /// This should be used in favor of `OutgoingResponse` and `IncomingResponse` when there
 /// is no need for streaming bodies.
+///
+/// # Examples
+///
+/// Send a response to an incoming HTTP request:
+///
+/// ```no_run
+/// use spin_sdk::http::{Request, Response};
+///
+/// fn handle_request(req: Request) -> anyhow::Result<Response> {
+///     Ok(Response::builder()
+///         .status(200)
+///         .header("content-type", "text/plain")
+///         .body("Hello, world")
+///         .build())
+/// }
+/// ```
+///
+/// Parse a response from an outgoing HTTP request:
+///
+/// ```no_run
+/// # use spin_sdk::http::{Request, Response};
+/// #[derive(serde::Deserialize)]
+/// struct User {
+///     name: String,
+/// }
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let request = Request::get("https://example.com");
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// if *response.status() == 200 {
+///     let body = response.body();
+///     let user: User = serde_json::from_slice(body)?;
+/// }
+/// # Ok(())
+/// # }
+/// ```
 pub struct Response {
     /// The status of the response
     status: StatusCode,
@@ -577,7 +894,43 @@ impl OutgoingRequest {
     }
 }
 
-/// The out param for setting an `OutgoingResponse`
+/// A parameter provided by Spin for setting a streaming [OutgoingResponse].
+///
+/// # Examples
+///
+/// Send a streaming response to an incoming request:
+///
+/// ```no_run
+/// # use spin_sdk::http::{Fields, IncomingRequest, OutgoingResponse, ResponseOutparam};
+/// async fn handle_request(req: IncomingRequest, response_outparam: ResponseOutparam) {
+///     use futures::SinkExt;
+///     use std::io::Read;
+///
+///     let response_headers = Fields::from_list(&[
+///         ("content-type".to_owned(), "text/plain".into())
+///     ]).unwrap();
+///
+///     let response = OutgoingResponse::new(response_headers);
+///     response.set_status_code(200).unwrap();
+///     let mut response_body = response.take_body();
+///
+///     response_outparam.set(response);
+///
+///     let mut file = std::fs::File::open("war-and-peace.txt").unwrap();
+///
+///     loop {
+///         let mut buf = vec![0; 1024];
+///         let count = file.read(&mut buf).unwrap();
+///
+///         if count == 0 {
+///             break;  // end of file
+///         }
+///
+///         buf.truncate(count);
+///         response_body.send(buf).await.unwrap();
+///     }
+/// }
+/// ```
 pub struct ResponseOutparam(types::ResponseOutparam);
 
 impl ResponseOutparam {
@@ -613,6 +966,59 @@ impl ResponseOutparam {
 }
 
 /// Send an outgoing request
+///
+/// # Examples
+///
+/// Get the example.com home page:
+///
+/// ```no_run
+/// use spin_sdk::http::{Request, Response};
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let request = Request::get("example.com").build();
+/// let response: Response = spin_sdk::http::send(request).await?;
+/// println!("{}", response.body().len());
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Use the `http` crate Request type to send a data transfer value:
+///
+/// ```no_run
+/// use hyperium::Request;
+///
+/// #[derive(serde::Serialize)]
+/// struct User {
+///     name: String,
+/// }
+///
+/// impl spin_sdk::http::conversions::TryIntoBody for User {
+///     type Error = serde_json::Error;
+///
+///     fn try_into_body(self) -> Result<Vec<u8>, Self::Error> {
+///         serde_json::to_vec(&self)
+///     }
+/// }
+///
+/// # #[tokio::main]
+/// # async fn main() -> anyhow::Result<()> {
+/// let user = User {
+///     name: "Alice".to_owned(),
+/// };
+///
+/// let request = hyperium::Request::builder()
+///     .method("POST")
+///     .uri("https://example.com/users")
+///     .header("content-type", "application/json")
+///     .body(user)?;
+///
+/// let response: hyperium::Response<()> = spin_sdk::http::send(request).await?;
+///
+/// println!("{}", response.status().is_success());
+/// # Ok(())
+/// # }
+/// ```
 pub async fn send<I, O>(request: I) -> Result<O, SendError>
 where
     I: TryIntoOutgoingRequest,
@@ -692,7 +1098,7 @@ impl std::fmt::Display for NonUtf8BodyError {
 }
 
 mod router;
-/// Exports HTTP Router items.
+#[doc(inline)]
 pub use router::*;
 
 /// A Body extractor

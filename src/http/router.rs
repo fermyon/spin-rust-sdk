@@ -39,7 +39,121 @@ where
 /// Route parameters extracted from a URI that match a route pattern.
 pub type Params = Captures<'static, 'static>;
 
-/// The Spin SDK HTTP router.
+/// Routes HTTP requests within a Spin component.
+///
+/// Routes may contain wildcards:
+///
+/// * `:name` is a single segment wildcard. The handler can retrieve it using
+///   [Params::get()].
+/// * `*` is a trailing wildcard (matches anything). The handler can retrieve it
+///   using [Params::wildcard()].
+///
+/// If a request matches more than one route, the match is selected according to the follow criteria:
+///
+/// * An exact route takes priority over any wildcard.
+/// * A single segment wildcard takes priority over a trailing wildcard.
+///
+/// (This is the same logic as overlapping routes in the Spin manifest.)
+///
+/// # Examples
+///
+/// Handle GET requests to a path with a wildcard, falling back to "not found":
+///
+/// ```no_run
+/// # use spin_sdk::http::{IntoResponse, Params, Request, Response, Router};
+/// fn handle_route(req: Request) -> Response {
+///     let mut router = Router::new();
+///     router.get("/hello/:planet", hello_planet);
+///     router.any("/*", not_found);
+///     router.handle(req)
+/// }
+///
+/// fn hello_planet(req: Request, params: Params) -> anyhow::Result<Response> {
+///     let planet = params.get("planet").unwrap_or("world");
+///     Ok(Response::new(200, format!("hello, {planet}")))
+/// }
+///
+/// fn not_found(req: Request, params: Params) -> anyhow::Result<Response> {
+///     Ok(Response::new(404, "not found"))
+/// }
+/// ```
+///
+/// Handle requests using a mix of synchronous and asynchronous handlers:
+///
+/// ```no_run
+/// # use spin_sdk::http::{IntoResponse, Params, Request, Response, Router};
+/// fn handle_route(req: Request) -> Response {
+///     let mut router = Router::new();
+///     router.get("/hello/:planet", hello_planet);
+///     router.get_async("/goodbye/:planet", goodbye_planet);
+///     router.handle(req)
+/// }
+///
+/// fn hello_planet(req: Request, params: Params) -> anyhow::Result<Response> {
+///     todo!()
+/// }
+///
+/// async fn goodbye_planet(req: Request, params: Params) -> anyhow::Result<Response> {
+///     todo!()
+/// }
+/// ```
+///
+/// Route differently according to HTTP method:
+///
+/// ```no_run
+/// # use spin_sdk::http::{IntoResponse, Params, Request, Response, Router};
+/// fn handle_route(req: Request) -> Response {
+///     let mut router = Router::new();
+///     router.get("/user", list_users);
+///     router.post("/user", create_user);
+///     router.get("/user/:id", get_user);
+///     router.put("/user/:id", update_user);
+///     router.delete("/user/:id", delete_user);
+///     router.any("/user", method_not_allowed);
+///     router.any("/user/:id", method_not_allowed);
+///     router.handle(req)
+/// }
+/// # fn list_users(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # fn create_user(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # fn get_user(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # fn update_user(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # fn delete_user(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # fn method_not_allowed(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// ```
+///
+/// Run the handler asynchronously:
+///
+/// ```no_run
+/// # use spin_sdk::http::{IntoResponse, Params, Request, Response, Router};
+/// async fn handle_route(req: Request) -> Response {
+///     let mut router = Router::new();
+///     router.get_async("/user", list_users);
+///     router.post_async("/user", create_user);
+///     router.handle_async(req).await
+/// }
+/// # async fn list_users(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # async fn create_user(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// ```
+///
+/// Priority when routes overlap:
+///
+/// ```no_run
+/// # use spin_sdk::http::{IntoResponse, Params, Request, Response, Router};
+/// fn handle_route(req: Request) -> Response {
+///     let mut router = Router::new();
+///     router.any("/*", handle_any);
+///     router.any("/:seg", handle_single_segment);
+///     router.any("/fie", handle_exact);
+///
+///     // '/fie' is routed to `handle_exact`
+///     // '/zounds' is routed to `handle_single_segment`
+///     // '/zounds/fie' is routed to `handle_any`
+///     router.handle(req)
+/// }
+/// # fn handle_any(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # fn handle_single_segment(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// # fn handle_exact(req: Request, params: Params) -> anyhow::Result<Response> { todo!() }
+/// ```
 pub struct Router {
     methods_map: HashMap<Method, MethodRouter<Box<dyn Handler>>>,
     any_methods: MethodRouter<Box<dyn Handler>>,
